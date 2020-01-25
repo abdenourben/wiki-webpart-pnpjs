@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "wiki-webpart-pnpjs-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/wikiWebpartPnpjs/WikiWebpartPnpjsWebPart.js",
+          "manifest": "./src/webparts/wikiWebpartPnpjs/WikiWebpartPnpjsWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "WikiWebpartPnpjsWebPartStrings": "lib/webparts/wikiWebpartPnpjs/loc/{locale}.js"
+  }
+}

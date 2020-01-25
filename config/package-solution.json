@@ -1,0 +1,13 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "wiki-webpart-pnpjs-client-side-solution",
+    "id": "9206a723-05cf-4702-a699-497de615bf7d",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "isDomainIsolated": false
+  },
+  "paths": {
+    "zippedPackage": "solution/wiki-webpart-pnpjs.sppkg"
+  }
+}
