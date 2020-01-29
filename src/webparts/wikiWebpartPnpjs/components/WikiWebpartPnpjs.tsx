@@ -1,15 +1,13 @@
 import * as React from 'react';
 import styles from './WikiWebpartPnpjs.module.scss';
 import { IWikiWebpartPnpjsProps } from './IWikiWebpartPnpjsProps';
-import { escape } from '@microsoft/sp-lodash-subset';
 import { sp } from '@pnp/sp'; 
 import { 
   taxonomy, 
   ITermStore,
-  ITerms,
-  ILabelMatchInfo,
-  ITerm,
-  ITermData } from '@pnp/sp-taxonomy'; 
+  ITerm
+} from '@pnp/sp-taxonomy'; 
+import { Nav, INavLink } from 'office-ui-fabric-react/lib/Nav';
 
 export interface ISearchable {
   termGuid: string;
@@ -26,137 +24,168 @@ export interface Imms {
   }
 }
 
-export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsProps, {}> {
+export interface ITermsState {
+  terms: ItermX[]
+}
 
-  public getSitePages() {
-    sp.web.lists.getByTitle("Site Pages").items.select("Title, FileRef, MMS").getAll().then(async (resp: Imms[])=> {
+export interface ItermX {
+  id: any; 
+  isRoot: any; 
+  name: any;
+  parent: any;
+  path: any
+}
+
+export interface Group {
+  name: any;
+  links: Link[]; 
+}
+
+export interface Link {
+  name: any;
+  url: any;
+  target: any;
+  expandAriaLabel: string,
+  collapseAriaLabel: string,
+  links: Link[]; 
+}
+
+export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsProps, ITermsState > {
+  constructor(props) {
+    super(props);
+    this.state = {
+      terms: []
+    }
+  }
+
+
+  public getSitePages(store: ITermStore) {
+    sp.web.lists.getByTitle("Site Pages").items.select("Title, FileRef, MMS").getAll().then((resp: Imms[])=> {
       var termGuidTab: any[] = new Array(); 
-      var termGuid: string; 
-      var termTitle: string;
-      var termName: string; 
-      const store: ITermStore = await taxonomy.termStores.getById("a99d9ab5846d4dce891cd055c2b89690"); 
- 
-
+      var termGuid: string, termTitle: string, termName: string;    
       resp.forEach(async element => {
         if(element["MMS"] != null ) {
           termGuidTab.push(element["MMS"]["TermGuid"]);
           termGuid = element["MMS"]["TermGuid"];
           termTitle = element["Title"]; 
           termName = element["FileRef"]; 
-
           var term: ITerm = store.getTermById(termGuid); 
-          await term.setLocalCustomProperty("pageUrl", "https://m365x873105.sharepoint.com"+termName); 
-          //const term2: ITerm & ITermData = await term.select("LocalCustomProperties").get();
-          //console.log(term2["LocalCustomProperties"]["pageUrl"]); 
+          term.setLocalCustomProperty("titlePage", termTitle);
+          term.setLocalCustomProperty("pageUrl", "https://m365x873105.sharepoint.com"+termName); 
         }
       });
     });
-    //sp.web.lists.getByTitle("Site Pages").items.getAll().then(console.log);
-  }
-
-  public async getPageUrlTerm(term: any) {
-    const store: ITermStore = await taxonomy.termStores.getById("a99d9ab5846d4dce891cd055c2b89690"); 
-    const termGuid = term.Id.substring(6, 42);
-    var termOrigin: ITerm = store.getTermById(termGuid); 
-    var termData: ITerm & ITermData = await termOrigin.select("LocalCustomProperties").get();
-    if (termData["LocalCustomProperties"]["pageUrl"] != null)
-      return termData["LocalCustomProperties"]["pageUrl"];
-    else {
-      return "?"; 
-    }
-  }
-
-  public async getValuePromise(promise: Promise<any>) {
-    return await promise; 
   }
 
 
-
-  public async getSearchables() {
+  public async getTerms() {
     const date = new Date(); 
     date.setDate(date.getDate() + 1); 
 
     const store = await taxonomy.termStores.usingCaching().getById("a99d9ab5846d4dce891cd055c2b89690"); 
+    this.getSitePages(store); 
     const termSet = await store.usingCaching().getTermSetById("452746d5-9636-4bc5-890f-473da11b1467"); 
-    const select = ['IsRoot', 'Labels', 'TermsCount', 'Id', 'Name', 'Parent']; 
+    const select = ['IsRoot', 'Labels', 'TermsCount', 'Id', 'Name', 'Parent', 'LocalCustomProperties']; 
     const terms = await termSet.terms.select(...select).usingCaching().get();
-
     const allTerms: any[] = [
       ...terms.map(term => {
-        //console.log("enter");
         const name = 'Parent';
-        const promisePpageUrl = this.getPageUrlTerm(term);
-    
         return {
-          id: term.Id ? term.Id.substring(6, 42) : undefined, 
-          isRoot: term.IsRoot, 
-          name: term.Name, 
-          parent: term[name] && term[name].Id ? term[name].Id.substring(6, 42): null, 
-          path: promisePpageUrl
-        };
-        
+            id: term.Id ? term.Id.substring(6, 42) : undefined, 
+            isRoot: term.IsRoot, 
+            name: term.LocalCustomProperties["titlePage"], 
+            parent: term[name] && term[name].Id ? term[name].Id.substring(6, 42): null, 
+            path: term.LocalCustomProperties["pageUrl"]
+          };
       })
-    ];    
+    ];
+    return(allTerms); 
+  } 
 
-    const searchables: ISearchable[] = []; 
-    const rootTerms = allTerms.filter((t) => t.isRoot === true);
-      const childTerms = allTerms
-        .filter((t) => t.isRoot === false && t.parent)
-        .sort((a,b) => a.parent - b.parent); 
-  
-      rootTerms.forEach((t) => {
-        let term: ISearchable = { termGuid: t.id, label: t.name, path: t.path, subTerms: [] }; 
-        term = this.recursiveAdd(term, childTerms); 
-        term.path = t.path; 
-        searchables.push(term);  
-    });
 
-    //this.searchables = searchables; 
-    //console.log(searchables); 
-    return(searchables) ; 
-  }
-
-  private recursiveAdd(currentTerm: any, allTerms: any): any {
-
+  public recursiveLink(currentTerm: any, allTerms: any, loopLink: INavLink) {
     const subs = allTerms.filter((t) => {
       return t.parent != null && currentTerm.termGuid === t.parent;
     });
-
     if (subs != null && subs.length > 0) {
-      currentTerm.subTerms = []; 
-      subs.forEach((s) => {
+      subs.forEach(s => {
+          const link: INavLink = {
+          name: s.name, 
+          url: s.path, 
+          target: s.path,
+          links: []
+        };
+
+        link.isExpanded = true; 
+
         const sub: ISearchable = { termGuid: s.id, label: s.name, path: s.path, subTerms: [] };
-        this.recursiveAdd(sub, allTerms); 
-        //sub.path.pop(); 
-        currentTerm.subTerms.push(sub);
+        this.recursiveLink(sub, allTerms, link)
+        loopLink.links.push(link); 
       });
     }
-
-    return currentTerm;
   }
 
 
   public componentDidMount() {
-    this.getSitePages();  
-    this.getSearchables().then(function(result){
-      console.log(result); 
-    }) 
+    const store = taxonomy.termStores.usingCaching().getById("a99d9ab5846d4dce891cd055c2b89690"); 
+    this.getSitePages(store); 
+    this.getTerms().then((res: any[]) => {
+      this.setState({
+        terms: res
+      })
+    }); 
   }
 
+
   public render(): React.ReactElement<IWikiWebpartPnpjsProps> {
-    return (
-      <div className={ styles.wikiWebpartPnpjs }>
-        <div className={ styles.container }>
-          <div className={ styles.row }>
-            <div className={ styles.column }>
-              <span className={ styles.title }>Welcome to SharePoint!</span>
-              <p className={ styles.subTitle }>Customize SharePoint experiences using Web Parts.</p>
-              <p className={ styles.description }>{escape(this.props.description)}</p>
-              <a href="https://aka.ms/spfx" className={ styles.button }>
-                <span className={ styles.label }>Learn more</span>
-              </a>
+   
+    const result = this.state.terms; 
+    var link: INavLink[] = []; 
+    const rootTerms = result.filter((t) => t.isRoot === true);
+    rootTerms.forEach((t) => {
+      let term: ISearchable = { termGuid: t.id, label: t.name, path: t.path, subTerms: [] }; 
+      let loopLink: INavLink = {
+        name: t.name,
+        url: t.path,
+        target: t.path,
+        links: [],
+      };
+      this.recursiveLink(term, result, loopLink); 
+      term.path = t.path; 
+      link.push(loopLink); 
+  });
+
+  link.forEach(element => {
+    element.isExpanded = true; 
+  });
+
+  function _onLinkClick(ev: React.MouseEvent<HTMLElement>, item?: INavLink) {
+    if (item && item.name === 'Version Mac') {
+      alert('Version Mac clicked');
+      item.isExpanded = false; 
+    }
+    console.log(item.isExpanded); 
+    console.log(item.parentId); 
+  }
+
+
+    return ( 
+      <div className={styles.wikiWebpartPnpjs}>
+        <div className={styles.container}>
+          <div className={styles.row}>
+            <div className={styles.column}>
+              <span className={styles.title}>Documentation Wiki</span>  
             </div>
           </div>
+          <Nav
+            onLinkClick={_onLinkClick}
+            ariaLabel="Nav example with nested links"
+            groups={[
+              {
+                links: link
+              }
+            ]}
+          />
         </div>
       </div>
     );
