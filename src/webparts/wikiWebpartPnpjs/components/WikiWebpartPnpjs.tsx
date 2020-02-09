@@ -10,6 +10,7 @@ import {
 } from '@pnp/sp-taxonomy'; 
 import { Nav, INavLink, INavLinkGroup } from 'office-ui-fabric-react/lib/Nav';
 
+
 export interface ISearchable {
   termGuid: string;
   label: string;
@@ -108,7 +109,8 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
           name: s.name, 
           url: s.path, 
           target: s.path,
-          links: []
+          links: [], 
+          //isExpanded: "https://m365x873105.sharepoint.com"+s.path === window.location.href ? true : false, 
         };
 
         const sub: ISearchable = { termGuid: s.id, label: s.name, path: s.path, subTerms: [] };
@@ -118,29 +120,41 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
     }
   }
 
-  public recursiveExpand(link: INavLink[]) {
-    //console.log("je suis la")
-    link.forEach(element => {
-       
-      if(0 == (element.url).localeCompare(window.location.href)) {
-        //console.log("true"); 
-        element.isExpanded = true; 
-      } 
-      else {
-        //console.log("false"); 
-        element.isExpanded = false; 
-      }
-    });
+  public search(links: INavLink[]): boolean {
+    var bool: boolean = false; 
+    var bool2: boolean = false;
+    if(links.length != 0) {
+      links.forEach(link => {
+        if(link.url === window.location.pathname) {
+          bool = true; 
+          link.isExpanded = true; 
+        }
+        else {
+          if(link.links.length != 0) {
+            bool = this.search(link.links)
+          }
+        }
+      });
+    } 
+    return bool; 
   }
 
-  public isThere(loopLink: INavLink) {
-    loopLink.links.forEach(element => {
-      if((element.url).localeCompare(window.location.href)) {
-        loopLink.isExpanded = true; 
-        element.isExpanded = true; 
-      }
-    });
+  public recursiveExpand(link: INavLink) {
+    if(link.url === window.location.pathname) {
+      link.isExpanded = true; 
+    } 
+    if(this.search(link.links)) {
+      console.log("entrer")
+      link.isExpanded = true; 
+    }
+    if(link.links.length != 0) {
+      link.links.forEach(e => {
+        this.recursiveExpand(e); 
+      });
+    }
   }
+
+
 
 
   public componentDidMount() {
@@ -163,17 +177,26 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
         let loopLink: INavLink = {
           name: t.name,
           url: t.path,
-          target: t.path,
+          target: "https://m365x873105.sharepoint.com"+t.path,
           links: [],
+          //isExpanded: "https://m365x873105.sharepoint.com"+t.path === window.location.href ? true : false, 
         };
         this.recursiveLink(term, result, loopLink); 
         term.path = t.path; 
         link.push(loopLink); 
     })
 
-    console.log("try"); 
-    console.log(link); 
-    this.recursiveExpand(link); 
+
+    link.forEach(e => {
+      this.recursiveExpand(e); 
+    });
+
+
+    function _onLinkClick(ev: React.MouseEvent<HTMLElement>, item?: INavLink) {
+      window.location.assign(item.url); 
+    }
+
+  
 
     return ( 
       <div className={styles.wikiWebpartPnpjs}>
@@ -183,8 +206,10 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
               <span className={styles.title}>Documentation Wiki</span>  
             </div>
           </div>
-          <Nav
-            //onLinkClick={_onLinkClick}
+        
+        </div>
+        <Nav
+            onLinkClick={_onLinkClick}
             ariaLabel="Nav example with nested links"
             groups={[
               {
@@ -192,7 +217,6 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
               }
             ]}
           />
-        </div>
       </div>
     );
   }

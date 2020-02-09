@@ -65,7 +65,6 @@ export default class WikiWebpartPnpjsWebPart extends BaseClientSideWebPart <IWik
     return super.onInit().then(_ => {
   
       // other init code may be present
-  
       sp.setup({
         spfxContext: this.context
       });
