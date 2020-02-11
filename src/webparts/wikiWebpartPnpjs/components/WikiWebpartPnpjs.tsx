@@ -64,7 +64,7 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
     //récupérer toutes les pages
     var resp: Imms[] = await sp.web.lists.getByTitle("Site Pages").items.select("Title, FileRef, MMS").getAll(); 
     //récupérer toutes les données sur les termes
-    const termSet = store.usingCaching().getTermSetById("452746d5-9636-4bc5-890f-473da11b1467"); 
+    const termSet = store.usingCaching().getTermSetById("3187ff98-4899-4e84-82ba-d7de79de3daf"); 
     const select = ['IsRoot', 'Labels', 'TermsCount', 'Id', 'Name', 'Parent', 'LocalCustomProperties']; 
     const terms = await termSet.terms.select(...select).usingCaching().get();
 
@@ -158,7 +158,7 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
 
 
   public componentDidMount() {
-    const store = taxonomy.termStores.usingCaching().getById("a99d9ab5846d4dce891cd055c2b89690"); 
+    const store = taxonomy.termStores.usingCaching().getById("28982ec4b5664c068d98b4b06b17bd29"); 
     this.getSitePages2(store).then((res: any[]) => {
       this.setState({
         terms: res
@@ -177,7 +177,7 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
         let loopLink: INavLink = {
           name: t.name,
           url: t.path,
-          target: "https://m365x873105.sharepoint.com"+t.path,
+          target: "https://bbsdz.sharepoint.com/"+t.path,
           links: [],
           //isExpanded: "https://m365x873105.sharepoint.com"+t.path === window.location.href ? true : false, 
         };
@@ -206,9 +206,7 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
               <span className={styles.title}>Documentation Wiki</span>  
             </div>
           </div>
-        
-        </div>
-        <Nav
+          <Nav
             onLinkClick={_onLinkClick}
             ariaLabel="Nav example with nested links"
             groups={[
@@ -217,6 +215,7 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
               }
             ]}
           />
+        </div> 
       </div>
     );
   }
