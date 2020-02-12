@@ -203,7 +203,7 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
         <div className={styles.container}>
           <div className={styles.row}>
             <div className={styles.column}>
-              <span className={styles.title}>Documentation Wiki</span>  
+              <span className={styles.title}>Wiki URW</span>  
             </div>
           </div>
           <Nav
@@ -215,6 +215,7 @@ export default class WikiWebpartPnpjs extends React.Component<IWikiWebpartPnpjsP
               }
             ]}
           />
+       
         </div> 
       </div>
     );
